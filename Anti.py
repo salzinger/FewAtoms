@@ -46,14 +46,14 @@ def upXY(j,N,C):
   oplist=[]
   for n in range(0,N-1):
     oplist.append(identity(3))
-  oplist.insert(j,Qobj([[0,0,0],[C,0,0],[0,0,1]]))
+  oplist.insert(j,Qobj([[0,0,0],[C,0,0],[0,0,0]]))
   return tensor(oplist)
 
 def downXY(j,N,C):
   oplist=[]
   for n in range(0,N-1):
     oplist.append(identity(3))
-  oplist.insert(j,Qobj([[0,C,0],[0,0,0],[0,0,1]]))
+  oplist.insert(j,Qobj([[0,C,0],[0,0,0],[0,0,0]]))
 
   return tensor(oplist)
 
@@ -61,14 +61,14 @@ def upJ(j,N,Oc):
   oplist=[]
   for n in range(0,N-1):
     oplist.append(identity(3))
-  oplist.insert(j,Qobj([[1,0,0],[0,0,Oc],[0,0,0]]))
+  oplist.insert(j,Qobj([[0,0,0],[0,0,Oc],[0,0,0]]))
   return tensor(oplist)
 
 def downJ(j,N,Oc):
   oplist=[]
   for n in range(0,N-1):
     oplist.append(identity(3))
-  oplist.insert(j,Qobj([[1,0,0],[0,0,0],[0,Oc,0]]))
+  oplist.insert(j,Qobj([[0,0,0],[0,0,0],[0,Oc,0]]))
   return tensor(oplist)
 
 def upD(j,N,Oc):
@@ -85,6 +85,21 @@ def downD(j,N,Oc):
   oplist.insert(j,Qobj([[0,0,0],[0,0,0],[0,Oc,0]]))
   return tensor(oplist)
 
+def coupling(j,N,Oc):
+  oplist=[]
+  for n in range(0,N-1):
+    oplist.append(identity(3))
+  oplist.insert(j,Qobj([[0,0,0],[0,0,Oc],[0,Oc,0]]))
+  return tensor(oplist)
+
+
+def scatter(j,N,Gamma):
+  oplist=[]
+  for n in range(0,N-1):
+    oplist.append(identity(3))
+  oplist.insert(j,Qobj([[0,0,0],[0,0,0],[0,0,Gamma]]))
+  return tensor(oplist)
+
 def V(R,a,j,k):
   return (R/float((a*np.abs(k-j))))**3
 
@@ -92,7 +107,7 @@ def J_eff(R,a,j,k):
   return 1*V(R,a,j,k)/(2+2*V(R,a,j,k)**2)
 
 def G_eff(R,a,j,k):
-  return 0*V(R,a,j,k)**2/(1+V(R,a,j,k)**2)**2
+  return 1*V(R,a,j,k)**2/(1+V(R,a,j,k)**2)**2
 
 def g_eff(R,a,j,k):
   return 1*V(R,a,j,k)**4/(1+V(R,a,j,k)**2)**2
@@ -104,7 +119,7 @@ def H(R,N,C):
     hh+1
     HH=HH+0.5*(upXY(j,N,C)*downXY(j+1,N,C)+upXY(j+1,N,C)*downXY(j,N,C))
 
-    print("H",hh,": Coherent XY dynamics between sites j=",j,"j+1=",j+1,HH)
+    #print("H",hh,": Coherent XY dynamics between sites j=",j,"j+1=",j+1)
 
   return HH
 
@@ -112,15 +127,16 @@ def H_eff(R,a,N):
   H_e=0
   h_e=0
   for k in range(0,N):
+    H_e=H_e+coupling(k,N,1)
     for j in range(0,N):
       if k>j:        
         h_e+1
         J=np.sqrt(J_eff(R,a,j,k))
-        H_e=H_e+0.5*(upJ(j,N,J)*downJ(k,N,J)+upJ(k,N,J)*downJ(j,N,J))
+        #H_e=H_e+0.5*(upJ(j,N,J)*downJ(k,N,J)+upJ(k,N,J)*downJ(j,N,J))
 
-        print("H",h_e,": Exchange dynamics between sites k=",k,"j=",j,"at distance",a*np.abs(k-j),"with J_eff:","%6.5f" % J_eff(R,a,j,k),H_e)
+        #print("H",h_e,": Exchange dynamics between sites k=",k,"j=",j,"at distance",a*np.abs(k-j),"with J_eff:","%6.5f" % J_eff(R,a,j,k))
 
-
+  print(H_e)
   return H_e
 
 scatterindex=[]
@@ -131,6 +147,7 @@ def L_eff(R,a,N):
   sitelist=[]
 
   for j in range(0,N):
+    L.append(scatter(j,N,1))
     for k in range(0,N):
       if k>j:
 
@@ -152,13 +169,13 @@ def L_eff(R,a,N):
 
         g=np.sqrt(-1j*g_eff(R,a,j,k))
 
-        L.append(upD(k,N,g)*downD(k,N,g))
+        #L.append(upD(k,N,g)*downD(k,N,g))
 
         scatterindex.append(j)
 
-        print("L",len(L)-1,": Scattering at j=",j,"due to impurity site k=",k,"at distance=",a*np.abs(k-j),"with g_eff:","%6.5f" % g_eff(R,a,j,k),upD(k,N,g)*downD(k,N,g))
+        #print("L",len(L)-1,": Scattering at j=",j,"due to impurity site k=",k,"at distance=",a*np.abs(k-j),"with g_eff:","%6.5f" % g_eff(R,a,j,k))
 
-
+  print(L)
   return L
 
 
@@ -182,13 +199,13 @@ VNav=np.zeros(timesteps)
 disavgs=1
 i=1
 
-for r in [2.8]:
+for r in [4.0]:
   for t in np.ones(disavgs):
     print(i,"of",disavgs)
     i=i+1
     #print("Interaction Coefficient over one-half EIT bandwidth: ","%6.3f" % (r**(1/3)))
     #print("Interparticle spacing in units of [Critical Radius R]: ", "%6.3f" % (a/r))
-    times = np.linspace(0.0, t*11, timesteps)
+    times = np.linspace(0.0, t*12.6, timesteps)
     results=[]
     asklist=[]
 
@@ -199,7 +216,7 @@ for r in [2.8]:
 
     result1 = mesolve(H(r,N,1) , productstate(0,N) , times, [] , [askatom(0,N)+askatom(1,N)], options=opts)
 
-    result2 = mesolve(H_eff(r,a,N) , result1.states[timesteps-1] , times, L_eff(r,a,N) , [askatom(0,N)+askatom(1,N)], options=opts)
+    result2 = mesolve(H_eff(r,a,N) , result1.states[timesteps-1] , np.linspace(0.0, t*10, timesteps), L_eff(r,a,N) , [askatom(0,N)+askatom(1,N)], options=opts)
 
     result3 = mesolve(H(r,N,1) , result2.states[timesteps-1] , times, [] , [askatom(0,N)+askatom(1,N)], options=opts)
 
@@ -224,7 +241,7 @@ for r in [2.8]:
       traceddd.append(np.abs(result2.states[t].ptrace(0)[1][0][1]))
       tracedbb.append(np.abs(result2.states[t].ptrace(0)[2][0][2]))
 
-      #print(result3.states[t])
+      #print(result1.states[t])
 
       #conc.append(concurrence(result.states[t]))
       VN.append(entropy_vn(result2.states[t]))
@@ -295,14 +312,14 @@ for r in [2.8]:
     #fig, ax = plt.subplots()
 
 fig, ax = plt.subplots()
-ax.plot(times, np.abs(traceduu)/disavgs, label="rho_uu_site_0")
-ax.plot(times, np.abs(traceddd)/disavgs, label="rho_dd_site_0")
-ax.plot(times, np.abs(tracedbb)/disavgs, label="rho_bb_site_0")
+ax.plot(times, np.abs(traceduu)/disavgs, label="rho_uu")
+ax.plot(times, np.abs(traceddd)/disavgs, label="rho_dd")
+ax.plot(times, np.abs(tracedbb)/disavgs, label="rho_bb")
 #ax.plot(times, np.abs(purityAav)/disavgs, label="Purity_site_0")
 #ax.plot(times, np.abs(purityBav)/disavgs, label="PurityB")
 #ax.plot(times, np.abs(purityCav)/disavgs, label="PurityC")
 #ax.plot(times, concav/disavgs, label="Concurrence")
 ax.plot(times, VNav/disavgs, label="Von-Neumann Entropy")
-leg = plt.legend(loc='best', ncol=3, shadow=True, fancybox=True)
+leg = plt.legend(loc='upper right', ncol=1, shadow=True, fancybox=True)
 leg.get_frame().set_alpha(0.5)
 plt.show()
